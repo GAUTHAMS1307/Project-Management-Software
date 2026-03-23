@@ -1,5 +1,23 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Base URL for the backend API.  When the frontend is deployed on Vercel and
+// the backend is deployed on Render, set the VITE_API_URL environment variable
+// to the Render service URL (e.g. https://my-api.onrender.com).
+// Leave it empty (or unset) when both are served from the same origin.
+const API_BASE_URL = ((import.meta.env.VITE_API_URL as string) || "").replace(
+  /\/+$/,
+  "",
+);
+
+/** Prepend the API base URL to relative paths (paths starting with '/').
+ *  Absolute URLs (e.g. starting with 'http') are returned unchanged. */
+function buildUrl(path: string): string {
+  if (path.startsWith("/")) {
+    return `${API_BASE_URL}${path}`;
+  }
+  return path;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -21,7 +39,7 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(buildUrl(url), {
     method: "GET",
     credentials: "include",
     ...options,
@@ -45,7 +63,7 @@ export const getQueryFn: <T>(options: {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetch(buildUrl(queryKey.join("/") as string), {
       credentials: "include",
       headers,
     });

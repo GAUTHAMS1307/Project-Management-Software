@@ -4,6 +4,34 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS – allow the separately deployed frontend (e.g. Vercel) to reach this API.
+// Set the CORS_ORIGIN environment variable to the Vercel frontend URL (comma-separated
+// list for multiple origins).  In development (no CORS_ORIGIN set) this is skipped.
+const corsOrigin = process.env.CORS_ORIGIN;
+if (corsOrigin) {
+  const allowedOrigins = corsOrigin.split(",").map((o) => o.trim());
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      );
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization",
+      );
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
